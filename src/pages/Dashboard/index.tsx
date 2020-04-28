@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 
-import { View, Image } from 'react-native';
+import { View, ListRenderItem } from 'react-native';
 
 import formatValue from '../../utils/formatValue';
 import { useCart } from '../../hooks/cart';
@@ -21,7 +21,7 @@ import {
   ProductButton,
 } from './styles';
 
-interface Product {
+interface ProductItem {
   id: string;
   title: string;
   image_url: string;
@@ -31,19 +31,36 @@ interface Product {
 const Dashboard: React.FC = () => {
   const { addToCart } = useCart();
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductItem[]>([]);
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO
+      const { data } = await api.get<ProductItem[]>('products');
+      setProducts(data);
     }
 
     loadProducts();
   }, []);
 
-  function handleAddToCart(item: Product): void {
-    // TODO
+  function handleAddToCart(item: ProductItem): void {
+    addToCart({ ...item, quantity: 0 });
   }
+
+  const renderItem: ListRenderItem<ProductItem> = ({ item }) => (
+    <Product>
+      <ProductImage source={{ uri: item.image_url }} />
+      <ProductTitle>{item.title}</ProductTitle>
+      <PriceContainer>
+        <ProductPrice>{formatValue(item.price)}</ProductPrice>
+        <ProductButton
+          testID={`add-to-cart-${item.id}`}
+          onPress={() => handleAddToCart(item)}
+        >
+          <FeatherIcon size={20} name="plus" color="#C4C4C4" />
+        </ProductButton>
+      </PriceContainer>
+    </Product>
+  );
 
   return (
     <Container>
@@ -55,21 +72,7 @@ const Dashboard: React.FC = () => {
           ListFooterComponentStyle={{
             height: 80,
           }}
-          renderItem={({ item }) => (
-            <Product>
-              <ProductImage source={{ uri: item.image_url }} />
-              <ProductTitle>{item.title}</ProductTitle>
-              <PriceContainer>
-                <ProductPrice>{formatValue(item.price)}</ProductPrice>
-                <ProductButton
-                  testID={`add-to-cart-${item.id}`}
-                  onPress={() => handleAddToCart(item)}
-                >
-                  <FeatherIcon size={20} name="plus" color="#C4C4C4" />
-                </ProductButton>
-              </PriceContainer>
-            </Product>
-          )}
+          renderItem={renderItem}
         />
       </ProductContainer>
       <FloatingCart />
